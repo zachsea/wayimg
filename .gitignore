@@ -1,0 +1,26 @@
+# build
+build/
+out/
+cmake-build-*/
+
+# cmake artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# nix / direnv
+.direnv/
+result
+result-*
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
