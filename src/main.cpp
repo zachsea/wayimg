@@ -1,0 +1,62 @@
+#define SDL_MAIN_USE_CALLBACKS 1
+
+#include "application.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_main.h>
+#include <SDL3/SDL_video.h>
+#include <memory>
+
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+  if (argc != 2) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Usage: %s <file>", argv[0]);
+    return SDL_APP_FAILURE;
+  }
+
+  // force wayland + vulkan
+  SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland");
+  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "vulkan");
+
+  SDL_SetAppMetadata("wayimg", "0.1.0", "cafe.zach.wayimg");
+
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "SDL_Init failed: %s", SDL_GetError());
+    return SDL_APP_FAILURE;
+  }
+
+  // initialize the application class
+  try {
+    auto app = std::make_unique<Application>();
+    app->createImageWindow(argv[1]);
+    *appstate = app.release();
+  } catch (std::exception e) {
+    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize application: %s", e.what());
+  }
+  return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
+  // maybe applicaiton should handle this
+  if (event->type == SDL_EVENT_QUIT) {
+    return SDL_APP_SUCCESS;
+  }
+  static_cast<Application*>(appstate)->handleEvent(*event);
+  return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppIterate(void* appstate) {
+  if (appstate) {
+    // draw
+    static_cast<Application*>(appstate)->doRender();
+  }
+
+  return SDL_APP_CONTINUE;
+}
+
+void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+  if (appstate) {
+    std::unique_ptr<Application> app(static_cast<Application*>(appstate));
+  }
+  SDL_Quit();
+}

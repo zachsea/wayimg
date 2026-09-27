@@ -9,6 +9,7 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 compile_commands.json
+.cache/
 
 # nix / direnv
 .direnv/
@@ -24,3 +25,4 @@ result-*
 # os
 .DS_Store
 Thumbs.db
+.envrc
