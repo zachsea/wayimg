@@ -21,6 +21,8 @@ public:
   void handleEvent(SDL_Event e);
   // Render the window
   void doRender();
+  // Kill the window nicely
+  void close();
 
 private:
   SDL_Window* m_window{nullptr};

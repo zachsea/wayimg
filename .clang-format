@@ -1,3 +1,4 @@
 BasedOnStyle: LLVM
 PointerAlignment: Left
 ColumnLimit: 120
+IndentCaseLabels: true

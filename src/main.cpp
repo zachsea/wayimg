@@ -1,3 +1,4 @@
+#include <SDL3/SDL_hints.h>
 #define SDL_MAIN_USE_CALLBACKS 1
 
 #include "application.h"
@@ -9,14 +10,14 @@
 #include <memory>
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
-  if (argc != 2) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Usage: %s <file>", argv[0]);
+  if (argc < 2) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Usage: %s [file ...]", argv[0]);
     return SDL_APP_FAILURE;
   }
 
-  // force wayland + vulkan
   SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland");
-  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "vulkan");
+  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+  SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "1");
 
   SDL_SetAppMetadata("wayimg", "0.1.0", "cafe.zach.wayimg");
 
@@ -28,7 +29,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   // initialize the application class
   try {
     auto app = std::make_unique<Application>();
-    app->createImageWindow(argv[1]);
+    // open requested files
+    for (int i = 1; i < argc; i++) {
+      app->createImageWindow(argv[i]);
+    }
     *appstate = app.release();
   } catch (std::exception e) {
     SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize application: %s", e.what());

@@ -16,12 +16,7 @@ ImageWindow::ImageWindow() {
   }
 }
 
-ImageWindow::~ImageWindow() {
-  if (m_renderer)
-    SDL_DestroyRenderer(m_renderer);
-  if (m_window)
-    SDL_DestroyWindow(m_window);
-}
+ImageWindow::~ImageWindow() { close(); }
 
 SDL_WindowID ImageWindow::getWindowId() {
   if (!m_window) {
@@ -125,41 +120,41 @@ void ImageWindow::zoomAtPoint(float cursorX, float cursorY, float newZoom) {
 void ImageWindow::handleEvent(SDL_Event e) {
   // TODO: make keys configurable, abstract responsibility out of image_window
   switch (e.type) {
-  case SDL_EVENT_MOUSE_WHEEL: {
-    const float ZOOM_FACTOR = 1.15f;
+    case SDL_EVENT_MOUSE_WHEEL: {
+      const float ZOOM_FACTOR = 1.15f;
 
-    float newZoom = m_zoom;
-    if (e.wheel.y > 0) {
-      newZoom *= ZOOM_FACTOR;
-    } else if (e.wheel.y < 0) {
-      newZoom /= ZOOM_FACTOR;
-    }
-    newZoom = std::fmax(0.001f, newZoom);
+      float newZoom = m_zoom;
+      if (e.wheel.y > 0) {
+        newZoom *= ZOOM_FACTOR;
+      } else if (e.wheel.y < 0) {
+        newZoom /= ZOOM_FACTOR;
+      }
+      newZoom = std::fmax(0.001f, newZoom);
 
-    zoomAtPoint(e.wheel.mouse_x, e.wheel.mouse_y, newZoom);
-    break;
-  }
-  case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-    if (e.button.button == SDL_BUTTON_LEFT) {
-      m_dragging = true;
+      zoomAtPoint(e.wheel.mouse_x, e.wheel.mouse_y, newZoom);
+      break;
     }
-    break;
-  }
-  case SDL_EVENT_MOUSE_BUTTON_UP: {
-    if (e.button.button == SDL_BUTTON_LEFT) {
-      m_dragging = false;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      if (e.button.button == SDL_BUTTON_LEFT) {
+        m_dragging = true;
+      }
+      break;
     }
-    break;
-  }
-  case SDL_EVENT_MOUSE_MOTION: {
-    if (m_dragging) {
-      m_panOffset.x += e.motion.xrel;
-      m_panOffset.y += e.motion.yrel;
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+      if (e.button.button == SDL_BUTTON_LEFT) {
+        m_dragging = false;
+      }
+      break;
     }
-    break;
-  }
-  default:
-    break;
+    case SDL_EVENT_MOUSE_MOTION: {
+      if (m_dragging) {
+        m_panOffset.x += e.motion.xrel;
+        m_panOffset.y += e.motion.yrel;
+      }
+      break;
+    }
+    default:
+      break;
   }
 }
 
@@ -186,4 +181,15 @@ void ImageWindow::doRender() {
   }
 
   SDL_RenderPresent(m_renderer);
+}
+
+void ImageWindow::close() {
+  if (m_renderer) {
+    SDL_DestroyRenderer(m_renderer);
+    m_renderer = nullptr;
+  }
+  if (m_window) {
+    SDL_DestroyWindow(m_window);
+    m_window = nullptr;
+  }
 }
