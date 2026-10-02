@@ -30,8 +30,8 @@
             sdl3-image
           ];
         };
-        packages.default = pkgs.stdenv.mkDerivation {
 
+        packages.default = pkgs.stdenv.mkDerivation {
           pname = "wayimg";
           version = "0.1.0";
           src = ./.;
@@ -47,5 +47,10 @@
           ];
         };
       }
-    );
+    )
+    // {
+      overlays.default = final: _prev: {
+        wayimg = self.packages.${final.stdenv.hostPlatform.system}.default;
+      };
+    };
 }
