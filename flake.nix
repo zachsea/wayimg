@@ -1,5 +1,5 @@
 {
-  description = "SDL3 + CMake project";
+  description = "Image viewer for Wayland focused on tiling window managers";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -32,7 +32,7 @@
         };
         packages.default = pkgs.stdenv.mkDerivation {
 
-          pname = "sdl3project";
+          pname = "wayimg";
           version = "0.1.0";
           src = ./.;
 

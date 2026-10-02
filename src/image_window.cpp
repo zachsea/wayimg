@@ -1,6 +1,7 @@
 #include "image_window.h"
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_video.h>
 #include <SDL3_image/SDL_image.h>
 #include <algorithm>
@@ -176,6 +177,9 @@ void ImageWindow::doRender() {
     dst.y = (winH - texH) / 2.0f + m_panOffset.y;
     dst.w = texW;
     dst.h = texH;
+
+    // TODO: make configurable
+    SDL_SetTextureScaleMode(m_image, SDL_SCALEMODE_PIXELART);
 
     SDL_RenderTexture(m_renderer, m_image, nullptr, &dst);
   }

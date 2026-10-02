@@ -36,6 +36,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     *appstate = app.release();
   } catch (std::exception e) {
     SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize application: %s", e.what());
+    return SDL_APP_FAILURE;
   }
   return SDL_APP_CONTINUE;
 }

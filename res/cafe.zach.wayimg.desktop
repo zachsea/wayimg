@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=wayimg
+Comment=Wayland image viewer
+Exec=wayimg %F
+Icon=cafe.zach.wayimg
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=image/bmp;image/gif;image/jpeg;image/x-ilbm;image/x-iff;image/vnd.zbrush.pcx;image/x-pcx;image/png;image/x-portable-anymap;image/x-portable-pixmap;image/x-portable-graymap;image/x-portable-bitmap;image/x-qoi;image/qoi;image/x-tga;image/x-xcf;image/x-xpixmap;image/svg+xml;image/avif;image/jxl;image/tiff;image/webp;
