@@ -9,45 +9,21 @@
 #include <format>
 #include <stdexcept>
 
-ImageWindow::ImageWindow() {
-  SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_BORDERLESS;
-  // TODO: better window title
-  if (!SDL_CreateWindowAndRenderer("wayimg", 100, 100, flags, &m_window, &m_renderer)) {
-    throw std::runtime_error(std::format("CreateWindowAndRenderer failed: {}", SDL_GetError()));
-  }
-}
+// TODO: better window title
+ImageWindow::ImageWindow()
+    : Window("wayimg", 100, 100, SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_BORDERLESS) {}
 
 ImageWindow::~ImageWindow() { close(); }
 
-SDL_WindowID ImageWindow::getWindowId() {
-  if (!m_window) {
-    throw std::runtime_error("getWindowId failed: m_window was null");
+void ImageWindow::onClose() noexcept {
+  if (m_image) {
+    SDL_DestroyTexture(m_image);
+    m_image = nullptr;
   }
-  SDL_WindowID windowId = SDL_GetWindowID(m_window);
-  if (!windowId) {
-    throw std::runtime_error(std::format("getWindowId failed: {}", SDL_GetError()));
-  }
-  return windowId;
 }
 
-ImageWindow::ClampedSize ImageWindow::clampSizeToDisplay(int desiredW, int desiredH) {
-  float scale = 1.0f;
-  SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
-  if (display) {
-    SDL_Rect bounds;
-    if (SDL_GetDisplayUsableBounds(display, &bounds)) {
-      if (desiredW > bounds.w || desiredH > bounds.h) {
-        scale = std::min(bounds.w / static_cast<float>(desiredW), bounds.h / static_cast<float>(desiredH));
-        desiredW = static_cast<int>(std::lround(desiredW * scale));
-        desiredH = static_cast<int>(std::lround(desiredH * scale));
-      }
-    }
-  }
-  return {{desiredW, desiredH}, scale};
-}
-
-void ImageWindow::setImage(std::string filePath) {
-  SDL_Texture* newImage = IMG_LoadTexture(m_renderer, filePath.c_str());
+void ImageWindow::setImage(const std::string& filePath) {
+  SDL_Texture* newImage = IMG_LoadTexture(renderer(), filePath.c_str());
   if (!newImage) {
     throw std::runtime_error(std::format("IMG_LoadTexture failed: {}", SDL_GetError()));
   }
@@ -65,11 +41,11 @@ void ImageWindow::setImage(std::string filePath) {
   // TODO: make this toggleable ("fit to window on open" vs. always 1:1)
   m_zoom = clamped.scale;
 
-  SDL_SetWindowSize(m_window, clamped.size.x, clamped.size.y);
+  SDL_SetWindowSize(window(), clamped.size.x, clamped.size.y);
 }
 
 void ImageWindow::resizeToFitZoom() {
-  if (!m_image || !m_window) {
+  if (!m_image || !isOpen()) {
     return;
   }
 
@@ -79,7 +55,7 @@ void ImageWindow::resizeToFitZoom() {
   texH *= m_zoom;
 
   int winW, winH;
-  SDL_GetWindowSize(m_window, &winW, &winH);
+  SDL_GetWindowSize(window(), &winW, &winH);
 
   int desiredW = std::max(winW, static_cast<int>(std::ceil(texW)));
   int desiredH = std::max(winH, static_cast<int>(std::ceil(texH)));
@@ -89,17 +65,17 @@ void ImageWindow::resizeToFitZoom() {
   }
 
   ClampedSize clamped = clampSizeToDisplay(desiredW, desiredH);
-  SDL_SetWindowSize(m_window, clamped.size.x, clamped.size.y);
+  SDL_SetWindowSize(window(), clamped.size.x, clamped.size.y);
 }
 
 void ImageWindow::zoomAtPoint(float cursorX, float cursorY, float newZoom) {
-  if (!m_window || !m_image) {
+  if (!isOpen() || !m_image) {
     m_zoom = newZoom;
     return;
   }
 
   int winW, winH;
-  SDL_GetWindowSize(m_window, &winW, &winH);
+  SDL_GetWindowSize(window(), &winW, &winH);
 
   float oldZoom = m_zoom;
   float zoomRatio = newZoom / oldZoom;
@@ -112,13 +88,13 @@ void ImageWindow::zoomAtPoint(float cursorX, float cursorY, float newZoom) {
   resizeToFitZoom();
 
   int newWinW, newWinH;
-  SDL_GetWindowSize(m_window, &newWinW, &newWinH);
+  SDL_GetWindowSize(window(), &newWinW, &newWinH);
 
   m_panOffset.x = (cursorX - newWinW / 2.0f) - dx * zoomRatio;
   m_panOffset.y = (cursorY - newWinH / 2.0f) - dy * zoomRatio;
 }
 
-void ImageWindow::handleEvent(SDL_Event e) {
+void ImageWindow::handleEvent(const SDL_Event& e) {
   // TODO: make keys configurable, abstract responsibility out of image_window
   switch (e.type) {
     case SDL_EVENT_MOUSE_WHEEL: {
@@ -160,14 +136,18 @@ void ImageWindow::handleEvent(SDL_Event e) {
 }
 
 void ImageWindow::doRender() {
-  SDL_RenderClear(m_renderer);
+  if (!isOpen()) {
+    return;
+  }
+
+  SDL_RenderClear(renderer());
 
   if (m_image) {
     float texW, texH;
     int winW, winH;
 
     SDL_GetTextureSize(m_image, &texW, &texH);
-    SDL_GetWindowSize(m_window, &winW, &winH);
+    SDL_GetWindowSize(window(), &winW, &winH);
 
     texW *= m_zoom;
     texH *= m_zoom;
@@ -181,19 +161,8 @@ void ImageWindow::doRender() {
     // TODO: make configurable
     SDL_SetTextureScaleMode(m_image, SDL_SCALEMODE_PIXELART);
 
-    SDL_RenderTexture(m_renderer, m_image, nullptr, &dst);
+    SDL_RenderTexture(renderer(), m_image, nullptr, &dst);
   }
 
-  SDL_RenderPresent(m_renderer);
-}
-
-void ImageWindow::close() {
-  if (m_renderer) {
-    SDL_DestroyRenderer(m_renderer);
-    m_renderer = nullptr;
-  }
-  if (m_window) {
-    SDL_DestroyWindow(m_window);
-    m_window = nullptr;
-  }
+  SDL_RenderPresent(renderer());
 }
