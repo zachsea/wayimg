@@ -57,6 +57,16 @@ Window* Window::findWindow(SDL_WindowID id) noexcept {
   return nullptr;
 }
 
+void Window::renderTree() {
+  if (!isOpen()) {
+    return;
+  }
+  doRender();
+  for (const auto& child : m_children) {
+    child->renderTree();
+  }
+}
+
 void Window::reapClosedChildren() {
   // flagged subtrees die whole, then recurse into the survivors
   std::erase_if(m_children, [](const std::unique_ptr<Window>& c) { return c->wantsClose(); });

@@ -81,7 +81,7 @@ void Application::handleEvent(const SDL_Event& e) {
 
 void Application::doRender() {
   for (const auto& [id, window] : m_windows) {
-    window->doRender();
+    window->renderTree();
   }
   settle();
 }

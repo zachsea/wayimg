@@ -24,6 +24,8 @@ public:
   virtual void handleEvent(const SDL_Event& e) = 0;
   // Render the window
   virtual void doRender() = 0;
+  // Render this window, then its descendants
+  void renderTree();
 
   // Kill the window nicely
   void close() noexcept;
@@ -45,6 +47,8 @@ protected:
   // Called once from close(), while the renderer is still alive, release renderer-owned resources (textures, etc.)
   // here.
   virtual void onClose() noexcept {}
+  // Destroy all children immediately
+  void clearChildren() noexcept { m_children.clear(); }
 
   [[nodiscard]] SDL_Window* window() const noexcept { return m_window; }
   [[nodiscard]] SDL_Renderer* renderer() const noexcept { return m_renderer; }
