@@ -4,7 +4,7 @@
 
 class ImageWindow final : public Window {
 public:
-  ImageWindow();
+  explicit ImageWindow(WindowHost& host);
   ~ImageWindow() override;
 
   // Replace or initially set the image being rendered

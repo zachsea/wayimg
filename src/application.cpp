@@ -12,7 +12,7 @@ Window& Application::addWindow(std::unique_ptr<Window> window) {
 }
 
 void Application::createImageWindow(const std::string& filePath) {
-  auto window = std::make_unique<ImageWindow>();
+  std::unique_ptr<ImageWindow> window = std::make_unique<ImageWindow>(host());
 
   if (!filePath.empty()) {
     if (!std::filesystem::exists(filePath)) {
@@ -25,8 +25,25 @@ void Application::createImageWindow(const std::string& filePath) {
   addWindow(std::move(window));
 }
 
+void Application::openWindow(std::unique_ptr<Window> window) {
+  if (window) {
+    m_pending.push_back(std::move(window));
+  }
+}
+
+Window* Application::findWindow(SDL_WindowID id) noexcept {
+  if (const auto it = m_windows.find(id); it != m_windows.end()) {
+    return it->second.get();
+  }
+  for (const auto& [rootId, root] : m_windows) {
+    if (Window* found = root->findWindow(id)) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
 void Application::handleEvent(const SDL_Event& e) {
-  // handle window specific events
   SDL_Window* eventWindow = SDL_GetWindowFromEvent(&e);
   if (!eventWindow) {
     return;
@@ -38,30 +55,49 @@ void Application::handleEvent(const SDL_Event& e) {
     return;
   }
 
-  const auto it = m_windows.find(eventWindowId);
-  if (it == m_windows.end()) {
+  // Late events for an already-closed window are expected, hence debug level
+  Window* target = findWindow(eventWindowId);
+  if (!target) {
     SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "handleEvent: no window with ID %u", eventWindowId);
     return;
   }
 
-  // intercept window events that need to be managed at the app level
   switch (e.type) {
+    // intercept events that need to be managed at the app level
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
       SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "close %u", eventWindowId);
-      it->second->close();
-      m_windows.erase(it);
+      target->requestClose();
       break;
     }
     // pass the event through for the specific window to handle on its own
     default: {
-      it->second->handleEvent(e);
+      target->handleEvent(e);
       break;
     }
   }
+
+  settle();
 }
 
 void Application::doRender() {
   for (const auto& [id, window] : m_windows) {
     window->doRender();
+  }
+  settle();
+}
+
+void Application::settle() {
+  std::erase_if(m_windows, [](const auto& entry) { return entry.second->wantsClose(); });
+  for (const auto& [id, window] : m_windows) {
+    window->reapClosedChildren();
+  }
+
+  if (!m_pending.empty()) {
+    // swap out first so adoption can't interact with new requests
+    std::vector<std::unique_ptr<Window>> pending = std::move(m_pending);
+    m_pending.clear();
+    for (auto& window : pending) {
+      addWindow(std::move(window));
+    }
   }
 }

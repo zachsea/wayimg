@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-class Application {
+class Application : private WindowHost {
 public:
   Application() = default;
   ~Application() = default;
@@ -25,5 +25,13 @@ public:
   void doRender();
 
 private:
+  void openWindow(std::unique_ptr<Window> window) override;
+
+  [[nodiscard]] WindowHost& host() noexcept { return *this; }
+  [[nodiscard]] Window* findWindow(SDL_WindowID id) noexcept;
+  // Reap closed windows and adopt pending
+  void settle();
+
   std::unordered_map<SDL_WindowID, std::unique_ptr<Window>> m_windows;
+  std::vector<std::unique_ptr<Window>> m_pending;
 };

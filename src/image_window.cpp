@@ -10,8 +10,8 @@
 #include <stdexcept>
 
 // TODO: better window title
-ImageWindow::ImageWindow()
-    : Window("wayimg", 100, 100, SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_BORDERLESS) {}
+ImageWindow::ImageWindow(WindowHost& host)
+    : Window(host, "wayimg", 100, 100, SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_BORDERLESS) {}
 
 ImageWindow::~ImageWindow() { close(); }
 

@@ -5,14 +5,31 @@
 #include <format>
 #include <stdexcept>
 
-Window::Window(const char* title, int width, int height, SDL_WindowFlags flags) {
+Window::Window(WindowHost& host, const char* title, int width, int height, SDL_WindowFlags flags) : m_host(host) {
   if (!SDL_CreateWindowAndRenderer(title, width, height, flags, &m_window, &m_renderer)) {
     destroyPrimitives();
     throw std::runtime_error(std::format("CreateWindowAndRenderer failed: {}", SDL_GetError()));
   }
 }
 
-Window::~Window() { destroyPrimitives(); }
+Window::Window(Window& parent, int width, int height, int offsetX, int offsetY, SDL_WindowFlags flags)
+    : m_host(parent.m_host) {
+  m_window = SDL_CreatePopupWindow(parent.m_window, offsetX, offsetY, width, height, flags);
+  if (!m_window) {
+    throw std::runtime_error(std::format("CreatePopupWindow failed: {}", SDL_GetError()));
+  }
+  m_renderer = SDL_CreateRenderer(m_window, nullptr);
+  if (!m_renderer) {
+    const std::string msg = std::format("CreateRenderer failed: {}", SDL_GetError());
+    destroyPrimitives();
+    throw std::runtime_error(msg);
+  }
+}
+
+Window::~Window() {
+  m_children.clear();
+  destroyPrimitives();
+}
 
 SDL_WindowID Window::getWindowId() const noexcept { return SDL_GetWindowID(m_window); }
 bool Window::isOpen() const noexcept { return m_window != nullptr; }
@@ -20,8 +37,32 @@ bool Window::isOpen() const noexcept { return m_window != nullptr; }
 void Window::close() noexcept {
   if (!isOpen())
     return;
+  m_children.clear();
   onClose();
   destroyPrimitives();
+}
+
+Window* Window::findWindow(SDL_WindowID id) noexcept {
+  if (id == 0) {
+    return nullptr;
+  }
+  if (isOpen() && getWindowId() == id) {
+    return this;
+  }
+  for (const auto& child : m_children) {
+    if (Window* found = child->findWindow(id)) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
+void Window::reapClosedChildren() {
+  // flagged subtrees die whole, then recurse into the survivors
+  std::erase_if(m_children, [](const std::unique_ptr<Window>& c) { return c->wantsClose(); });
+  for (const auto& child : m_children) {
+    child->reapClosedChildren();
+  }
 }
 
 void Window::destroyPrimitives() noexcept {
