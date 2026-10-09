@@ -1,4 +1,5 @@
 #include "image_window.h"
+#include "context_window.h"
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
@@ -114,6 +115,12 @@ void ImageWindow::handleEvent(const SDL_Event& e) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
       if (e.button.button == SDL_BUTTON_LEFT) {
         m_dragging = true;
+      } else if (e.button.button == SDL_BUTTON_RIGHT) {
+        try {
+          emplaceChild<ContextWindow>(static_cast<int>(e.button.x), static_cast<int>(e.button.y));
+        } catch (const std::exception& ex) {
+          SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "context menu failed: %s", ex.what());
+        }
       }
       break;
     }

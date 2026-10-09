@@ -56,7 +56,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
     static_cast<Application*>(appstate)->doRender();
   }
 
-  return SDL_APP_CONTINUE;
+  return static_cast<Application*>(appstate)->hasWindows() ? SDL_APP_CONTINUE : SDL_APP_SUCCESS;
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {

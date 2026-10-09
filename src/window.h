@@ -54,6 +54,14 @@ protected:
   [[nodiscard]] SDL_Renderer* renderer() const noexcept { return m_renderer; }
   [[nodiscard]] WindowHost& host() const noexcept { return m_host; }
 
+  template <class T, class... Args> T& emplaceChild(Args&&... args) {
+    static_assert(std::is_base_of_v<Window, T>);
+    auto child = std::make_unique<T>(*this, std::forward<Args>(args)...);
+    T& ref = *child;
+    m_children.push_back(std::move(child));
+    return ref;
+  }
+
   struct ClampedSize {
     SDL_Point size;
     float scale;

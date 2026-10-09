@@ -23,6 +23,8 @@ public:
   void handleEvent(const SDL_Event& e);
   // Render all windows
   void doRender();
+  // True while any top-level window is open or waiting to be adopted
+  [[nodiscard]] bool hasWindows() const noexcept { return !m_windows.empty() || !m_pending.empty(); }
 
 private:
   void openWindow(std::unique_ptr<Window> window) override;
