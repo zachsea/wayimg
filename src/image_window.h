@@ -20,9 +20,11 @@ protected:
 
 private:
   void zoomAtPoint(float cursorX, float cursorY, float newZoom);
+  bool dismissContextMenu();
 
   SDL_Texture* m_image{nullptr};
   double m_zoom{1.0};
   SDL_FPoint m_panOffset{0.0f, 0.0f};
   bool m_dragging{false};
+  SDL_WindowID m_contextMenuId{0};
 };

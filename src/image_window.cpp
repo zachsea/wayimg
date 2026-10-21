@@ -1,5 +1,7 @@
 #include "image_window.h"
 #include "context_window.h"
+#include "menu_action.h"
+#include "menu_items_builder.h"
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
@@ -113,11 +115,28 @@ void ImageWindow::handleEvent(const SDL_Event& e) {
       break;
     }
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      // any click on the image window dismisses the open context menu
+      const bool menuWasOpen = dismissContextMenu();
+
       if (e.button.button == SDL_BUTTON_LEFT) {
-        m_dragging = true;
+        // the click that dismissed the menu shouldn't also start a drag
+        if (!menuWasOpen) {
+          m_dragging = true;
+        }
       } else if (e.button.button == SDL_BUTTON_RIGHT) {
         try {
-          emplaceChild<ContextWindow>(static_cast<int>(e.button.x), static_cast<int>(e.button.y));
+          auto& menu = emplaceChild<ContextWindow>(e.button.x, e.button.y,
+                                                   MenuItemsBuilder{}
+                                                       .action("Close", [this] { requestClose(); })
+                                                       .separator()
+                                                       .action("Exit",
+                                                               [this] {
+                                                                 SDL_Event quit{};
+                                                                 quit.type = SDL_EVENT_QUIT;
+                                                                 SDL_PushEvent(&quit);
+                                                               })
+                                                       .build());
+          m_contextMenuId = menu.getWindowId();
         } catch (const std::exception& ex) {
           SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "context menu failed: %s", ex.what());
         }
@@ -172,4 +191,14 @@ void ImageWindow::doRender() {
   }
 
   SDL_RenderPresent(renderer());
+}
+
+bool ImageWindow::dismissContextMenu() {
+  Window* menu = findWindow(m_contextMenuId); // null for id 0 or a menu that's already gone
+  m_contextMenuId = 0;
+  if (!menu) {
+    return false;
+  }
+  menu->requestClose();
+  return true;
 }

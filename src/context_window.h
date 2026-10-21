@@ -1,19 +1,36 @@
 #pragma once
+#include "menu_context.h"
 #include "window.h"
+#include <optional>
+#include <vector>
 
-// Popup menu (just has one item for now, we need a "builder" paradigm or something)
-class ContextWindow final : public Window {
+class ContextWindow final : public Window, private MenuContext {
 public:
-  // (x, y) is relative to the parent's top-left corner
-  ContextWindow(Window& parent, int x, int y);
+  ContextWindow(Window& parent, int x, int y, MenuItems items, MenuStyle style = {});
 
   void handleEvent(const SDL_Event& e) override;
   void doRender() override;
 
 private:
-  static constexpr int WIDTH = 120;
-  static constexpr int HEIGHT = 28;
+  // MenuContext
+  void dismissAll() noexcept override;
+  void openSubmenu(MenuBuilder build, const SDL_FRect& anchor) override;
 
-  Window& m_owner; // the parent owns us, so it always outlives
-  bool m_hovered{false};
+  struct Prepared {
+    MenuItems items;
+    std::vector<SDL_FRect> rects;
+    SDL_Point size{};
+  };
+  ContextWindow(Window& parent, int x, int y, Prepared prepared, const MenuStyle& style);
+  [[nodiscard]] static Prepared prepare(MenuItems items, const MenuStyle& style);
+
+  [[nodiscard]] std::optional<std::size_t> interactiveItemAt(float x, float y) const;
+  [[nodiscard]] bool hasOpenSubmenu() noexcept;
+
+  MenuStyle m_style;
+  MenuItems m_items;
+  std::vector<SDL_FRect> m_rects;
+  std::optional<std::size_t> m_hovered;
+  ContextWindow* m_parentMenu{nullptr};
+  SDL_WindowID m_submenuId{0};
 };
